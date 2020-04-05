@@ -69,10 +69,10 @@ app.post('/api/shorturl/new', (req, res) => {
       })
 
       url.save()
-        .then(() => {
+        .then((savedUrl) => {
           res.status(200).json({
-            "original_url": url.original,
-            "short_url": url.short
+            "original_url": savedUrl.original,
+            "short_url": savedUrl.short
           });
         })
         .catch((error) => {
