@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const dns = require('dns');
+const path = require('path');
 
 const { connectToMongoose } = require('./db');
 const Url = require('./model/url');
@@ -20,36 +21,36 @@ app.use(bodyParser.json())
 
 
 app.get('/', function(req, res){
-  res.sendFile(process.cwd() + '/views/index.html');
+  res.sendFile(path.resolve(__dirname, '/views/index.html'));
 });
 
 app.get("/api/hello", function (req, res) {
   res.json({greeting: 'hello API'});
 });
 
-app.get('/api/shorturl/:id', (req, res) => {
+app.get('/api/shorturl/:id', (req, res, next) => {
   const short = req.params.id
-  Url.findOne({ short }).exec()
-    .then((url) => {
-      if (url) {
-        return res.writeHead(302, {
-          'Location': url.original
-        })
-      }
-      console.log(`Printing- - - - res:`, res)
-      return res.redirect('/error.html')
-    })
-    .catch((error) => {
-      console.log("error", error)
-      return res.redirect('/index.html')
-    })
-  
+  Url.findOne({ short }, function (error, url) {
+    if (error) {
+      next(error)
+    } else if (url) {
+      res.redirect(302, url.original)
+      return;
+    }
+    next();
+  });
 });
 
-app.get('')
+function addHttp(url) {
+    if (!/^(?:f|ht)tps?\:\/\//.test(url)) {
+        url = "http://" + url;
+    }
+    
+    return url;
+}
 
 app.post('/api/shorturl/new', (req, res) => {
-  dns.lookup(req.body.url, (error, address) => {1
+  dns.lookup(req.body.url, (error, address) => {
     if (error) {
       return res.status(400).json({
         error: "invalid URL"
@@ -60,17 +61,18 @@ app.post('/api/shorturl/new', (req, res) => {
       if (error) {
         res.status(500).send(error)
       }
+
       const currentCount = count + 1
       const url = new Url({
-        original: req.body.url,
+        original: addHttp(req.body.url),
         short: currentCount
       })
 
       url.save()
         .then(() => {
           res.status(200).json({
-            "original_url": url,
-            "short_url": 1
+            "original_url": url.original,
+            "short_url": url.short
           });
         })
         .catch((error) => {
@@ -81,6 +83,10 @@ app.post('/api/shorturl/new', (req, res) => {
   });
 });
 
+app.use((error, req, res, next) => {
+  console.error(error.stack)
+  res.sendFile(path.resolve(__dirname, '/views/error.html'));
+})
 
 app.listen(port, function () {
   console.log(`Node.js listening to port ${port}...`);

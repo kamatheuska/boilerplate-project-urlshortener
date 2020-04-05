@@ -5,6 +5,6 @@ const urlSchema = new mongoose.Schema({
   short: String
 })
 
-const Url = mongoose.model('Url', urlSchema)
 
+const Url = mongoose.model('Url', urlSchema)
 module.exports = Url;
