@@ -85,7 +85,7 @@ app.post('/api/shorturl/new', (req, res) => {
 
 app.use((error, req, res, next) => {
   console.error(error.stack)
-  res.sendFile(path.resolve(__dirname, '/views/error.html'));
+  res.sendFile(path.resolve(__dirname, 'views/error.html'));
 })
 
 app.listen(port, function () {
