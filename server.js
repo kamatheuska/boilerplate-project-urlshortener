@@ -21,7 +21,7 @@ app.use(bodyParser.json())
 
 
 app.get('/', function(req, res){
-  res.sendFile(path.resolve(__dirname, '/views/index.html'));
+  res.sendFile(path.resolve(__dirname, 'views/index.html'));
 });
 
 app.get("/api/hello", function (req, res) {
