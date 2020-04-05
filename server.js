@@ -5,7 +5,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const dns = require('dns');
 const path = require('path');
-
+const util = require('util');
+const dnsLookupPromisfied = util.promisify(dns.lookup);
 const { connectToMongoose } = require('./db');
 const Url = require('./model/url');
 
@@ -24,7 +25,7 @@ app.get('/', function(req, res){
   res.sendFile(path.resolve(__dirname, 'views/index.html'));
 });
 
-app.get("/api/hello", function (req, res) {
+app.get('/api/hello', function (req, res) {
   res.json({greeting: 'hello API'});
 });
 
@@ -43,44 +44,55 @@ app.get('/api/shorturl/:id', (req, res, next) => {
 
 function addHttp(url) {
     if (!/^(?:f|ht)tps?\:\/\//.test(url)) {
-        url = "http://" + url;
+        url = 'http://' + url;
     }
     
     return url;
 }
 
-app.post('/api/shorturl/new', (req, res) => {
-  dns.lookup(req.body.url, (error, address) => {
-    if (error) {
-      return res.status(400).json({
-        error: "invalid URL"
-      });
-    }
-
-    Url.estimatedDocumentCount().exec((error, count) => {
-      if (error) {
-        res.status(500).send(error)
+app.post('/api/shorturl/new', (req, res, next) => {
+  const requestUrl = req.body.url
+  console.info(`Looking address of ${requestUrl}`)
+  dnsLookupPromisfied(requestUrl)
+    .then((address) => {
+      if (!address) {
+        next(new Error('URL not valid!'))
       }
 
-      const currentCount = count + 1
-      const url = new Url({
-        original: addHttp(req.body.url),
-        short: currentCount
-      })
 
-      url.save()
-        .then((savedUrl) => {
-          res.status(200).json({
-            "original_url": savedUrl.original,
-            "short_url": savedUrl.short
-          });
-        })
-        .catch((error) => {
+      Url.estimatedDocumentCount().exec((error, count) => {
+        if (error) {
           res.status(500).send(error)
+        }
+        const originalUrl = addHttp(requestUrl);
+        const currentCount = count + 1
+
+        console.info(`saving following URL: ${originalUrl}`)
+
+        const url = new Url({
+          original: originalUrl,
+          short: currentCount
         })
 
-    });
-  });
+        url.save()
+          .then((savedUrl) => {
+            console.info(savedUrl)
+            res.status(200).json({
+              'original_url': savedUrl.original,
+              'short_url': savedUrl.short
+            });
+          })
+          .catch((error) => {
+            res.status(500).send(error)
+          })
+
+      });
+    })
+    .catch(error => {
+        return res.status(400).json({
+          error: 'invalid URL'
+        });
+    })
 });
 
 app.use((error, req, res, next) => {
