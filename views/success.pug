@@ -20,13 +20,10 @@ html
     )
   body
     .container
-      h1="Sucess"
+      h1="Success"
       p="Use your short URL as:"
 
-      a(
-      href="https://url-shortener-nikameush.herokuapp.com/api/shorturl/" + shortUrl
-      target="_blank"
-      ) https://url-shortener-nikameush.herokuapp.com/api/shorturl/#{shortUrl}
+      a(href=href target="_blank") #{linkUrl}
 
       h3="You will be redirect to:"
       p=originalUrl

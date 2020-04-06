@@ -81,6 +81,10 @@ app.post('/api/shorturl/new', (req, res, next) => {
     .then((savedUrl) => {
       console.info(savedUrl);
       res.render('success', {
+        href: `/api/shorturl/${savedUrl.short}`,
+        linkUrl: process.env.NODE_ENV === 'development'
+          ? `localhost:${port}/api/shorturl/${savedUrl.short}`
+          : `https://url-shortener-nikameush.herokuapp.com/${savedUrl.short}`,
         originalUrl: savedUrl.original,
         shortUrl: savedUrl.short
       });
