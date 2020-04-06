@@ -6,6 +6,7 @@ const cors = require('cors');
 const dns = require('dns');
 const path = require('path');
 const util = require('util');
+const { URL } = require('url');
 const dnsLookupPromisfied = util.promisify(dns.lookup);
 const { connectToMongoose } = require('./db');
 const Url = require('./model/url');
@@ -19,7 +20,8 @@ connectToMongoose();
 app.use(cors());
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use(bodyParser.json())
-
+app.use(bodyParser.urlencoded())
+app.set('view engine', 'pug')
 
 app.get('/', function(req, res){
   res.sendFile(path.resolve(__dirname, 'views/index.html'));
@@ -42,62 +44,53 @@ app.get('/api/shorturl/:id', (req, res, next) => {
   });
 });
 
-function addHttp(url) {
-    if (!/^(?:f|ht)tps?\:\/\//.test(url)) {
-        url = 'http://' + url;
-    }
-    
-    return url;
-}
-
 app.post('/api/shorturl/new', (req, res, next) => {
-  const requestUrl = req.body.url
-  console.info(`Looking address of ${requestUrl}`)
-  dnsLookupPromisfied(requestUrl)
+  const requestUrl = req.body.url;
+  let urlHostname;
+  if (/^(?:f|ht)tps?\:\/\//.test(requestUrl)) {
+    urlHostname = new URL(requestUrl).hostname;
+  } else {
+    urlHostname = requestUrl
+  }
+  console.info(`Looking address of ${urlHostname}`);
+
+  dnsLookupPromisfied(urlHostname)
     .then((address) => {
       if (!address) {
-        next(new Error('URL not valid!'))
+        next(new Error('URL not valid!'));
       }
 
+      return Url.estimatedDocumentCount().exec();
+    })
+    .then((count) => {
+      console.info(`saving following URL: ${urlHostname}`);
 
-      Url.estimatedDocumentCount().exec((error, count) => {
-        if (error) {
-          res.status(500).send(error)
-        }
-        const originalUrl = addHttp(requestUrl);
-        const currentCount = count + 1
+      const currentCount = count + 1;
+      const url = new Url({
+        original: urlHostname,
+        short: currentCount
+      })
 
-        console.info(`saving following URL: ${originalUrl}`)
-
-        const url = new Url({
-          original: originalUrl,
-          short: currentCount
-        })
-
-        url.save()
-          .then((savedUrl) => {
-            console.info(savedUrl)
-            res.status(200).json({
-              'original_url': savedUrl.original,
-              'short_url': savedUrl.short
-            });
-          })
-          .catch((error) => {
-            res.status(500).send(error)
-          })
-
+      return url.save()
+    })
+    .then((savedUrl) => {
+      console.info(savedUrl);
+      res.status(200).json({
+        'original_url': savedUrl.original,
+        'short_url': savedUrl.short
       });
+
     })
-    .catch(error => {
-        return res.status(400).json({
-          error: 'invalid URL'
-        });
-    })
+    .catch(next)
 });
 
 app.use((error, req, res, next) => {
-  console.error(error.stack)
-  res.sendFile(path.resolve(__dirname, 'views/error.html'));
+  console.error(error)
+  res.render('error', {
+    title: 'Error on server',
+    errorMessage: error.message,
+    stack: error.stack
+  })
 })
 
 app.listen(port, function () {
