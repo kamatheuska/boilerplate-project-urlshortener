@@ -20,15 +20,15 @@ connectToMongoose();
 app.use(cors());
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded())
+app.use(bodyParser.urlencoded({
+  extended: true
+}))
 app.set('view engine', 'pug')
 
 app.get('/', function(req, res){
-  res.sendFile(path.resolve(__dirname, 'views/index.html'));
-});
-
-app.get('/api/hello', function (req, res) {
-  res.json({greeting: 'hello API'});
+  res.render('startpage', {
+    title: 'API Project: URL Shortener Microservice',
+  })
 });
 
 app.get('/api/shorturl/:id', (req, res, next) => {
@@ -64,6 +64,11 @@ app.post('/api/shorturl/new', (req, res, next) => {
     })
     .then((count) => {
       console.info(`saving following URL: ${urlHostname}`);
+
+      if (count > 100) {
+        next(new Error('Database capacity limit reached. Please Contact the administrator.'))
+      }
+
 
       const currentCount = count + 1;
       const url = new Url({

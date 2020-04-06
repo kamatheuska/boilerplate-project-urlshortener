@@ -1,0 +1,38 @@
+html
+  head
+    title= title
+    link(
+      href="https://fonts.googleapis.com/css?family=Roboto"
+      rel="stylesheet"
+      type="text/css"
+    )
+
+    link(
+      rel="shortcut icon"
+      href="https://cdn.hyperdev.com/us-east-1%3A52a203ff-088b-420f-81be-45bf559d01b1%2Ffavicon.ico"
+      type="image/x-icon"
+    )
+
+    link(
+      href="/public/style.css"
+      rel="stylesheet"
+      type="text/css"
+    )
+  body
+    .container
+      h1=title
+      h2="Short URL Creation"
+
+      h3="Example Usage"
+      a(href="/api/shorturl/1") https://url-shortener-nikameush.herokuapp.com/api/shorturl/1
+      </a>
+
+      h3="Will Redirect to:"
+      p="https://www.freecodecamp.org/forum/"
+
+
+      <form action="api/shorturl/new" method="POST">
+        <label for="url_input">URL to be shortened</label>
+        <input id="url_input" type="text" name="url" value="www.freecodecamp.org">
+        <input type="submit" value="POST URL">
+      </form>

@@ -72,3 +72,11 @@ input[type=text] {
   width: 220px;
   text-align: center;
 }
+
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
