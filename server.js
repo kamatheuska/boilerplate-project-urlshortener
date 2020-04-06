@@ -80,9 +80,9 @@ app.post('/api/shorturl/new', (req, res, next) => {
     })
     .then((savedUrl) => {
       console.info(savedUrl);
-      res.status(200).json({
-        'original_url': savedUrl.original,
-        'short_url': savedUrl.short
+      res.render('success', {
+        originalUrl: savedUrl.original,
+        shortUrl: savedUrl.short
       });
 
     })
